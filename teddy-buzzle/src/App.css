@@ -8,8 +8,8 @@
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background-color: #fffaf0;
-  color: #4b2e2e;
+  background-color: #f0f4f8;
+  color: #2d3748;
 }
 
 .app {
@@ -20,10 +20,11 @@ body {
 }
 
 .header {
-  background-color: #4b2e2e;
+  background-color: #3c366b;
   color: #ffffff;
   padding: 20px;
   font-size: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .main {
@@ -32,21 +33,25 @@ body {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  background-color: #e2e8f0;
 }
 
 .footer {
-  background-color: #a52a2a;
+  background-color: #4a5568;
   color: #ffffff;
   padding: 10px;
   font-size: 1rem;
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .footer a {
-  color: #ffffff;
+  color: #63b3ed;
   text-decoration: none;
+  transition: color 0.3s ease;
 }
 
 .footer a:hover {
+  color: #90cdf4;
   text-decoration: underline;
 }
 

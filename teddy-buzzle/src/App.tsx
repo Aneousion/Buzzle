@@ -1,42 +1,33 @@
 import React, { useEffect, useState } from 'react';
-import { JigsawPuzzle } from "react-jigsaw-puzzle/lib";
-import "react-jigsaw-puzzle/lib/jigsaw-puzzle.css";
+import JigsawPuzzle from "./JigsawPuzzle";
 
-import './App.css';
+//import './App.css';
 
 const App: React.FC = () => {
   const [image, setImage] = useState<string>('');
 
   useEffect(() => {
-    // Array of image URLs
-    const images = [
-      "https://www.steadyteddys.com/MEMES/meme4.jpg",
-      "https://www.steadyteddys.com/MEMES/meme1.png",
-      "https://www.steadyteddys.com/MEMES/meme2.png"
-    ];
-    // Select a random image
-    const randomImage = images[Math.floor(Math.random() * images.length)];
+    // Generate a random number between 1 and 100
+    const randomNumber = Math.floor(Math.random() * 600) + 1;
+
+    // Construct the image URL
+    const randomImage = `https://www.steadyteddys.com/MEMES/meme${randomNumber}.jpg`;
+
+    // Set the image state
     setImage(randomImage);
   }, []);
-
   return (
-    <div className="app">
-      <header className="header">Teddy Buzzle</header>
-      <main className="main">
-        {/* Render the puzzle only if an image is selected */}
-        {image ? (
-          <JigsawPuzzle
-            imageSrc={image}
-            rows={4}
-            columns={4}
-            onSolved={() => alert('Congratulations! You solved the puzzle!')}
-          />
-        ) : (
-          <p>Loading puzzle...</p>
-        )}
-      </main>
-      <footer className="footer">
-        created by <a href="https://github.com/yourgithub" target="_blank" rel="noopener noreferrer">Your GitHub</a>
+    <div className="min-h-screen bg-navy-900 text-white">
+      <div className="container mx-auto">
+        <h1 className="text-5xl font-bold text-center mt-3">Buzzle Game</h1>
+        <JigsawPuzzle
+          imageSrc={image}
+          gridSize={4}
+          onSolved={() => console.log('Puzzle solved!')}
+        />
+      </div>
+      <footer className='m-4'>
+        Created by <a href="https://x.com/0x_scientist">0x_scientist</a>
       </footer>
     </div>
   );
