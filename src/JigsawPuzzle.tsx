@@ -1,8 +1,8 @@
-import { FC, useEffect, useState, useCallback } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import React, { FC, useEffect, useState, useCallback } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./components/ui/dialog";
+import { Button } from "./components/ui/button";
 import confetti from 'canvas-confetti';
-import { cn } from "@/lib/utils";
+import { cn } from "./lib/utils";
 
 interface Tile {
   id: number;
