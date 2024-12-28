@@ -25,6 +25,8 @@ const JigsawPuzzle: FC<JigsawPuzzleProps> = ({
 }) => {
   const [tiles, setTiles] = useState<Tile[]>([]);
   const [isDragging, setIsDragging] = useState<number | null>(null);
+  const [selectedTile, setSelectedTile] = useState<number | null>(null);
+  const [touchedTile, setTouchedTile] = useState<number | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const shuffleTiles = useCallback(() => {
@@ -51,60 +53,134 @@ const JigsawPuzzle: FC<JigsawPuzzleProps> = ({
       });
     }
     setTiles(shuffledTiles);
+    setSelectedTile(null);
   }, [gridSize]);
 
   useEffect(() => {
     shuffleTiles();
   }, [gridSize, shuffleTiles]);
 
-  const handleDragStart = (id: number) => {
+  const handleTouchStart = (e: React.TouchEvent, id: number) => {
+    e.preventDefault();
+    setTouchedTile(id);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (touchedTile === null) return;
+
+    const touch = e.changedTouches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!element) return;
+
+    const puzzleGrid = element.closest('.puzzle-grid');
+    if (!puzzleGrid) return;
+
+    const rect = puzzleGrid.getBoundingClientRect();
+    const x = ((touch.clientX - rect.left) / rect.width) * 100;
+    const y = ((touch.clientY - rect.top) / rect.height) * 100;
+
+    const tileSize = 100 / gridSize;
+    const targetX = Math.floor(x / tileSize);
+    const targetY = Math.floor(y / tileSize);
+
+    if (targetX >= 0 && targetX < gridSize && targetY >= 0 && targetY < gridSize) {
+      handleDrop(targetX, targetY);
+    }
+
+    setTouchedTile(null);
+  };
+
+  const handleDragStart = (e: React.DragEvent, id: number) => {
+    e.stopPropagation();
     setIsDragging(id);
   };
 
-  const handleDrop = (x: number, y: number) => {
-    if (isDragging === null) return;
+  const handleClick = (e: React.MouseEvent, clickedTileId: number) => {
+    // Only handle clicks if we're not dragging
+    if (isDragging !== null) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
 
+    if (selectedTile === null) {
+      setSelectedTile(clickedTileId);
+      return;
+    }
+
+    if (selectedTile === clickedTileId) {
+      setSelectedTile(null);
+      return;
+    }
+
+    // Swap tiles
+    swapTiles(selectedTile, clickedTileId);
+    setSelectedTile(null);
+  };
+
+  const swapTiles = (firstTileId: number, secondTileId: number) => {
     setTiles((prevTiles) => {
-      const draggedTileIndex = prevTiles.findIndex((tile) => tile.id === isDragging);
-      const targetTileIndex = prevTiles.findIndex(
-        (tile) => tile.currentX === x && tile.currentY === y
-      );
+      const firstTileIndex = prevTiles.findIndex((tile) => tile.id === firstTileId);
+      const secondTileIndex = prevTiles.findIndex((tile) => tile.id === secondTileId);
 
-      if (draggedTileIndex === -1) return prevTiles;
+      if (firstTileIndex === -1 || secondTileIndex === -1) return prevTiles;
 
       const newTiles = [...prevTiles];
-      const draggedTile = newTiles[draggedTileIndex];
+      const firstTile = newTiles[firstTileIndex];
+      const secondTile = newTiles[secondTileIndex];
 
-      if (targetTileIndex !== -1) {
-        const targetTile = newTiles[targetTileIndex];
-        newTiles[targetTileIndex] = {
-          ...targetTile,
-          currentX: draggedTile.currentX,
-          currentY: draggedTile.currentY,
-        };
-      }
+      // Swap positions
+      const tempX = firstTile.currentX;
+      const tempY = firstTile.currentY;
+      
+      newTiles[firstTileIndex] = {
+        ...firstTile,
+        currentX: secondTile.currentX,
+        currentY: secondTile.currentY,
+      };
+      
+      newTiles[secondTileIndex] = {
+        ...secondTile,
+        currentX: tempX,
+        currentY: tempY,
+      };
 
-      newTiles[draggedTileIndex] = { ...draggedTile, currentX: x, currentY: y };
-
-      const allSolved = newTiles.every(
-        (tile) =>
-          tile.correctX === tile.currentX && tile.correctY === tile.currentY
-      );
-
-      if (allSolved) {
-        setShowSuccess(true);
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-        onSolved();
-      }
-
+      checkSolution(newTiles);
       return newTiles;
     });
+  };
+
+  const handleDrop = (x: number, y: number) => {
+    const activeId = isDragging !== null ? isDragging : touchedTile;
+    if (activeId === null) return;
+
+    const targetTile = tiles.find(tile => tile.currentX === x && tile.currentY === y);
+    if (targetTile) {
+      swapTiles(activeId, targetTile.id);
+    }
 
     setIsDragging(null);
+    setTouchedTile(null);
+  };
+
+  const checkSolution = (currentTiles: Tile[]) => {
+    const allSolved = currentTiles.every(
+      (tile) => tile.correctX === tile.currentX && tile.correctY === tile.currentY
+    );
+
+    if (allSolved) {
+      setShowSuccess(true);
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+      onSolved();
+    }
   };
 
   const handlePlayAgain = () => {
@@ -112,33 +188,32 @@ const JigsawPuzzle: FC<JigsawPuzzleProps> = ({
   };
 
   return (
-    
     <div className="w-full max-w-4xl mx-auto p-4 sm:p-8 bg-navy-900 text-white rounded-xl shadow-lg">
-      
       <div className="flex flex-col md:flex-row md:gap-8">
-
-        {/* Puzzle Grid */}
-
         <div
           className={cn(
-            "relative w-full aspect-square",
-            " rounded-lg overflow-hidden shadow-xl",
+            "relative w-full aspect-square puzzle-grid",
+            "rounded-lg overflow-hidden shadow-xl",
             "bg-white"
           )}
         >
-          
           {tiles.map((tile) => (
             <div
               key={tile.id}
               draggable
-              onDragStart={() => handleDragStart(tile.id)}
+              onDragStart={(e) => handleDragStart(e, tile.id)}
               onDragEnd={() => setIsDragging(null)}
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => handleDrop(tile.currentX, tile.currentY)}
+              onTouchStart={(e) => handleTouchStart(e, tile.id)}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onClick={(e) => handleClick(e, tile.id)}
               className={cn(
-                "absolute cursor-grab active:cursor-grabbing transition-transform",
-                "hover:z-10 hover:scale-105",
-                isDragging === tile.id ? "z-20 scale-105" : "z-10"
+                "absolute transition-all cursor-pointer",
+                "hover:z-10 hover:brightness-110",
+                (isDragging === tile.id || touchedTile === tile.id) ? "z-20 scale-105" : "",
+                selectedTile === tile.id ? "z-20 scale-105 ring-4 ring-blue-500 brightness-110" : "z-10"
               )}
               style={{
                 top: `${(tile.currentY / gridSize) * 100}%`,
@@ -147,16 +222,14 @@ const JigsawPuzzle: FC<JigsawPuzzleProps> = ({
                 height: `${100 / gridSize}%`,
                 backgroundImage: `url(${imageSrc})`,
                 backgroundSize: `${gridSize * 100}% ${gridSize * 100}%`,
-                backgroundPosition: `${(tile.correctX / (gridSize - 1)) * 100
-                  }% ${(tile.correctY / (gridSize - 1)) * 100}%`,
+                backgroundPosition: `${(tile.correctX / (gridSize - 1)) * 100}% ${(tile.correctY / (gridSize - 1)) * 100}%`,
                 boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)",
+                touchAction: "none"
               }}
             />
           ))}
         </div>
 
-
-        {/* Reference Image */}
         <div className="mt-4 md:mt-0 w-full md:w-1/2 aspect-square overflow-hidden shadow-lg">
           <img
             src={imageSrc}
@@ -166,12 +239,12 @@ const JigsawPuzzle: FC<JigsawPuzzleProps> = ({
         </div>
       </div>
       <Button
-            onClick={shuffleTiles}
-            className="mt-4 bg-blue-500 hover:bg-blue-600 text-white"
-          >
-            Shuffle Tiles
-          </Button>
-      {/* Success Dialog */}
+        onClick={shuffleTiles}
+        className="mt-4 bg-blue-500 hover:bg-blue-600 text-white"
+      >
+        Shuffle Tiles
+      </Button>
+      
       <Dialog open={showSuccess} onOpenChange={setShowSuccess}>
         <DialogContent className="sm:max-w-md bg-navy-800 text-white">
           <DialogHeader>
@@ -181,7 +254,7 @@ const JigsawPuzzle: FC<JigsawPuzzleProps> = ({
           </DialogHeader>
           <div className="text-center py-6">
             <p className="text-xl mb-6">
-             Unfortunately for you, you have a high IQ.
+              Unfortunately for you, you have a high IQ.
             </p>
             <Button
               onClick={handlePlayAgain}
@@ -197,4 +270,3 @@ const JigsawPuzzle: FC<JigsawPuzzleProps> = ({
 };
 
 export default JigsawPuzzle;
-

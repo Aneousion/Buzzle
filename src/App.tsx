@@ -17,9 +17,9 @@ const App: React.FC = () => {
     setImage(randomImage);
   }, []);
   return (
-    <div className="min-h-screen bg-navy-900 text-white">
+    <div className="min-h-screen bg-navy-900">
       <div className="container mx-auto">
-        <h1 className="text-5xl font-bold text-center mt-3">Steady Buzzle Game</h1>
+        <h1 className="text-3xl font-bold text-center mt-3 text-blue-500">Steady Buzzle Game</h1>
         <JigsawPuzzle
           imageSrc={image}
           gridSize={4}
